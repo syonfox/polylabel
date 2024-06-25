@@ -1,20 +1,24 @@
 {
-  "name": "@datavis-tech/polylabel",
-  "version": "1.3.0",
+  "name": "@syonfox/polylabel",
+  "version": "2.0.0",
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
   "scripts": {
     "pretest": "eslint *.js test/*.js",
-    "test": "tape test/test.js"
+    "test": "tape test/test.js",
+    "build": "mkdir -p dist && npx browserify polylabel.js -o dist/polylabel.js",
+    "rollup": "rollup -c"
   },
   "keywords": [],
-  "author": "Vladimir Agafonkin",
-  "license": "ISC",
+  "author": "Vladimir Agafonkin, updated by davis tec and then syonfox.",
+  "license": "MIT",
   "files": [
     "include",
     "polylabel.js"
   ],
   "devDependencies": {
+    "browserify": "^17.0.0",
+    "browserify-umdify": "^1.0.4",
     "eslint": "^7.0.0",
     "eslint-config-mourner": "^2.0.1",
     "tape": "^5.0.0"
