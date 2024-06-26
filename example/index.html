@@ -238,6 +238,19 @@
 
     // console.log(getColorFromCountryData(country, "POP_EST", "GDP_MD_EST", 0.5, maxValues)); // Outputs a color with the blue component hardcoded to 0.5
 
+function formatNumber(num) {
+    if (num < 1e6) {
+        return num.toString();
+    } else if (num >= 1e6 && num < 1e9) {
+        return (num / 1e6).toFixed(0).replace(/\.000$/, '') + 'M';
+    } else if (num >= 1e9 && num < 1e12) {
+        return (num / 1e9).toFixed(0).replace(/\.000$/, '') + 'B';
+    } else if (num >= 1e12 && num < 1e15) {
+        return (num / 1e12).toFixed(0).replace(/\.000$/, '') + 'T';
+    } else {
+        return num.toString();
+    }
+}
     function labelJson(data, field, order) {
 
         const properties = ["POP_EST", "GDP_MD_EST"];
@@ -250,7 +263,7 @@
                 radius: gj.properties.population ? Math.pow(gj.properties[order], .2) - 1 : 1
             }),
             labelProp: 'NAME',
-            labelFunc: l => (`${l.feature.properties[field]} (${l.feature.properties[order]})`),
+            labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties[order])})`),
             labelPos: 'cc',
             labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
             style: (f, l) => {
@@ -266,11 +279,63 @@
             },
             priorityProp: order,
             // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
-        }).addTo(map).bindPopup(l => `<pre>${JSON.stringify(l.feature.properties, null, 2)}</pre>`);
+        }).addTo(map).bindPopup(l => {
+
+            return generateCountryCard(l.feature.properties)
+        });
+
 
 
     }
 
+
+    function generateCountryCard(p) {
+        return `
+    <div class="country-card">
+      <h2>${p.NAME} (${p.POP_EST >= 1000000 ? (p.POP_EST / 1000000).toFixed(2) + "M" : p.POP_EST})</h2>
+      <p><strong>Abbreviation:</strong> ${p.ABBREV}</p>
+      <p><strong>Sovereignty:</strong> ${p.SOVEREIGNT}</p>
+      <p><strong>Type:</strong> ${p.TYPE}</p>
+      <p><strong>Population Estimate:</strong> ${p.POP_EST >= 1000000 ? (p.POP_EST / 1000000).toFixed(2) + "M" : p.POP_EST})</p>
+      <p><strong>GDP (Million USD):</strong> ${p.GDP_MD_EST >= 1000000 ? (p.GDP_MD_EST / 1000000).toFixed(2) + "M" : p.GDP_MD_EST})</p>
+      <p><strong>Economy Classification:</strong> ${p.ECONOMY}</p>
+      <p><strong>Income Group:</strong> ${p.INCOME_GRP}</p>
+      <p><strong>Continent:</strong> ${p.CONTINENT}</p>
+      <p><strong>Region:</strong> ${p.REGION_UN}</p>
+      <p><strong>Subregion:</strong> ${p.SUBREGION}</p>
+
+      <details>
+        <summary>More Information</summary>
+        <p><strong>ISO Codes:</strong></p>
+        <ul>
+          <li title="Two-letter country code used by the ISO (International Organization for Standardization)">ISO A2: ${p.ISO_A2}</li>
+          <li title="Three-letter country code used by the ISO (International Organization for Standardization)">ISO A3: ${p.ISO_A3}</li>
+          <li title="Three-digit country code used by the ISO (International Organization for Standardization)">ISO N3: ${p.ISO_N3}</li>
+        </ul>
+        <p><strong>Administrative Codes:</strong></p>
+        <ul>
+          <li title="Three-letter sovereignty code used by various international organizations">SOV_A3: ${p.SOV_A3}</li>
+          <li title="Three-letter administrative code used by the country itself">ADM0_A3: ${p.ADM0_A3}</li>
+          <li title="Three-letter geographical unit code used by various international organizations">GEOU_A3: ${p.GEOU_A3}</li>
+          <li title="Three-letter subunit code used by various international organizations">SU_A3: ${p.SU_A3}</li>
+        </ul>
+        <p><strong>Geographical Information:</strong></p>
+        <ul>
+          <li title="Color codes used for map representations">Map Colors: ${p.MAPCOLOR7}, ${p.MAPCOLOR8}, ${p.MAPCOLOR9}, ${p.MAPCOLOR13}</li>
+          <li title="Minimum zoom level for map display">Minimum Zoom: ${p.MIN_ZOOM}</li>
+          <li title="Minimum label zoom level for map display">Minimum Label: ${p.MIN_LABEL}</li>
+          <li title="Maximum label zoom level for map display">Maximum Label: ${p.MAX_LABEL}</li>
+        </ul>
+      </details>
+
+      <p><strong>Resources:</strong></p>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(p.NAME_SORT)}" title="Wikipedia page for ${p.NAME}">Wikipedia: ${p.NAME}</a></li>
+        <li><a href="https://duckduckgo.com/?q=National+Flower+of+${encodeURIComponent(p.NAME)}" title="Search for the national flower of ${p.NAME}">DuckDuckGo Search: National Flower of ${p.NAME}</a></li>
+      </ul>
+    </div>
+  `;
+    }
 
 </script>
 </body>

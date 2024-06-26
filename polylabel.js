@@ -486,7 +486,7 @@ polylabel.stretched = (rings, ratio) => {
  * @param geometry - an geojson geometry
  * @return {*[]}
  */
-getLabelPos = (geometry) => {
+polylabel.getLabelPos = (geometry) => {
     let pos;
     if (geometry.type === 'MultiPolygon') {
         let maxDist = 0; // for multipolygons, pick the polygon with most available space

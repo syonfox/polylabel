@@ -239,7 +239,7 @@ L.Labeler = L.GeoJSON.extend({
         // let latLng = layer.getLatLng ? layer.getLatLng() :
         //     geomType.endsWith('Polygon') ? L.PolyUtil.polygonCenter(layer._defaultShape(), L.CRS.EPSG3857)
         //         : L.LineUtil.polylineCenter(layer._defaultShape(), L.CRS.EPSG3857);
-        let latLng = layer.getLatLng ? layer.getLatLng() : getLabelPos(layer.feature.geometry).reverse()
+        let latLng = layer.getLatLng ? layer.getLatLng() : polylabel.getLabelPos(layer.feature.geometry).reverse()
 
         this._labels[layerId] = {
             label: label,

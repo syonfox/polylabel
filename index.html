@@ -58,6 +58,20 @@
         .btn:hover {
             background: #004d40;
         }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            text-align: left;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            text-align: left;
+
+        }
     </style>
 </head>
 <body>
@@ -73,6 +87,107 @@
         <a href="https://github.com/syonfox/polylabel" class="btn">View on GitHub</a>
         <a href="https://polylabel.pages.dev/example" class="btn">See Example</a>
     </p>
+    <p>This version has the streatched modification that allows you to select even more optimal centers by finding a elipsis of inaccesability. this leverages the fact that
+    labels are generaly more wide then tall. </p>
+    <p>To use this you may leverage the fallowing snip-it:</p>
+
+
+    <h1>Polylabel Documentation</h1>
+
+    <h2>Introduction</h2>
+    <p>Polylabel is a utility for finding the optimal placement of a label within a polygon. It uses various techniques such as the pole of inaccessibility to find the most distant point from the polygon's edges, ensuring the label is placed in the most central location.</p>
+
+    <h2>Class and Function Signatures</h2>
+
+    <h3>TinyQueue</h3>
+    <p>A priority queue implementation.</p>
+    <pre><code>class TinyQueue {
+    TinyQueue(data: Array, compare: Function): TinyQueue
+    void push(item: Any): void
+    Any pop(): Any
+    Any peek(): Any
+    void _up(pos: Number): void
+    void _down(pos: Number): void
+}</code></pre>
+
+    <h3>Rectangle</h3>
+    <p>A class for representing rectangles and checking for collisions.</p>
+    <pre><code>class Rectangle {
+    static Rectangle fromXYWH(x: Number, y: Number, width: Number, height: Number): Rectangle
+    static Rectangle fromAABB(ax: Number, ay: Number, bx: Number, by: Number): Rectangle
+    static Rectangle fromLatLon(ll1: Object, ll2: Object): Rectangle
+    static Rectangle fromLatLng(ll1: Object, ll2: Object): Rectangle
+
+    Rectangle(x: Number, y: Number, width: Number, height: Number, mode: String = 'xywh'): Rectangle
+
+    Number getArea(): Number
+    Object getTopLeft(): Object
+    Object getTopRight(): Object
+    Object getBottomLeft(): Object
+    Object getBottomRight(): Object
+
+    static Boolean isColliding(rect1: Rectangle, rect2: Rectangle): Boolean
+    static Rectangle resolveCollision(rect1: Rectangle, rect2: Rectangle): Rectangle
+}</code></pre>
+
+    <h3>computeGeoJSONCentroids</h3>
+    <p>Compute centroids for a GeoJSON feature collection.</p>
+    <pre><code>Array computeGeoJSONCentroids(featureCollection: Object): Array</code></pre>
+
+    <h3>polylabel</h3>
+    <p>Find the pole of inaccessibility for a polygon.</p>
+    <pre><code>Array polylabel(polygon: Array, precision: Number = 1.0, debug: Boolean = false, centroidWeight: Number = 0): Array</code></pre>
+
+    <h3>polylabel.stretched</h3>
+    <p>Find the pole of inaccessibility for a stretched polygon.</p>
+    <pre><code>Array polylabel.stretched(rings: Array, ratio: Number): Array</code></pre>
+
+    <h3>polylabel.getLabelPos</h3>
+    <p>Get the best label position for a GeoJSON geometry.</p>
+    <pre><code>Array polylabel.getLabelPos(geometry: Object): Array</code></pre>
+
+    <h2>Example Usage</h2>
+    <p>Here is an example of using the <code>polylabel.getLabelPos</code> function with a custom implementation using stretch ratio and options:</p>
+    <pre><code>const geojsonFeature = {
+    "type": "Feature",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [-73.96943, 40.78519],
+                [-73.96082, 40.78095],
+                [-73.95269, 40.78404],
+                [-73.95796, 40.79070],
+                [-73.96541, 40.79449],
+                [-73.96943, 40.78519]
+            ]
+        ]
+    }
+};
+
+const ratio = 1.5;
+
+function customGetLabelPos(geometry, ratio, options = {}) {
+    let pos;
+    if (geometry.type === 'MultiPolygon') {
+        let maxDist = 0;
+        for (const polygon of geometry.coordinates) {
+            const p = polylabel.stretched(polygon, ratio);
+            if (p.distance > maxDist) {
+                pos = p;
+                maxDist = p.distance;
+            }
+        }
+    } else {
+        pos = polylabel.stretched(geometry.coordinates, ratio);
+    }
+    return pos;
+}
+
+const labelPos = customGetLabelPos(geojsonFeature.geometry, ratio);
+console.log(labelPos); // Outputs the best label position for the polygon
+</code></pre>
+
 </div>
 <footer>
     <p>Hosted at <a href="https://polylabel.pages.dev" class="btn">polylabel.pages.dev</a></p>
