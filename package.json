@@ -4,6 +4,7 @@
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
   "scripts": {
+    "build": "echo Done"
   },
   "keywords": [],
   "author": "Vladimir Agafonkin, updated by davis tec and then syonfox.",
