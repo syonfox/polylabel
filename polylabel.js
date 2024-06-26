@@ -1,4 +1,4 @@
-sourceyup
+
 class TinyQueue {
     constructor(data = [], compare = defaultCompare) {
         this.data = data;
@@ -77,6 +77,207 @@ class TinyQueue {
 function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
+
+
+//########################################################################################
+// nieave approach one use the bbox center
+//########################################################################################
+// AABBColision.js
+
+class Rectangle {
+    static fromXYWH(x, y, width, height) {
+        return new Rectangle(x, y, width, height);
+    }
+    static fromAABB(ax,ay, bx, by) {
+        const x = Math.min(ll1.lon, ll2.lon);
+        const y = Math.min(ll1.lat, ll2.lat);
+        const width = Math.abs(ll1.lon - ll2.lon);
+        const height = Math.abs(ll1.lat - ll2.lat);
+        return new Rectangle(x, y, width, height);
+    }
+    static fromLatLon(ll1, ll2) {
+        return Rectangle.fromAABB(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+    }
+    static fromLatLng(ll1, ll2) {
+        return Rectangle.fromAABB(ll1.lat, ll1.lng, ll2.lat, ll2.lng);
+    }
+
+    constructor(x, y, width, height, mode='xywh') {
+        if(mode === 'aabb') {
+
+        }
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    getArea() {
+        return this.width * this.height;
+    }
+
+    getTopLeft() {
+        return { x: this.x, y: this.y };
+    }
+
+    getTopRight() {
+        return { x: this.x + this.width, y: this.y };
+    }
+
+    getBottomLeft() {
+        return { x: this.x, y: this.y + this.height };
+    }
+
+    getBottomRight() {
+        return { x: this.x + this.width, y: this.y + this.height };
+    }
+
+    static isColliding(rect1, rect2) {
+        return (
+            rect1.x < rect2.x + rect2.width &&
+            rect1.x + rect1.width > rect2.x &&
+            rect1.y < rect2.y + rect2.height &&
+            rect1.y + rect1.height > rect2.y
+        );
+    }
+
+    static resolveCollision(rect1, rect2) {
+        if (!AABB.isColliding(rect1, rect2)) {
+            return null; // No collision
+        }
+
+        const area1 = rect1.getArea();
+        const area2 = rect2.getArea();
+
+        return area1 > area2 ? rect1 : rect2;
+    }
+
+    static fromLatLon(ll1, ll2) {
+        const x = Math.min(ll1.lon, ll2.lon);
+        const y = Math.min(ll1.lat, ll2.lat);
+        const width = Math.abs(ll1.lon - ll2.lon);
+        const height = Math.abs(ll1.lat - ll2.lat);
+
+        return new AABB(x, y, width, height);
+    }
+}
+
+
+//########################################################################################
+// nieave approach 2 user the polygon centroid
+//########################################################################################
+
+function computeGeoJSONCentroids(featureCollection) {
+    function computeCentroid(latlngs) {
+        let xSum = 0, ySum = 0, areaSum = 0, n = latlngs.length;
+        if (n === 1) return latlngs[0]; // Early out if length is one
+        if (n === 2) {
+            // For two points, return the midpoint
+            return [(latlngs[0][0] + latlngs[1][0]) / 2, (latlngs[0][1] + latlngs[1][1]) / 2];
+        }
+        for (let i = 0; i < n; i++) {
+            let lat1 = latlngs[i][1];
+            let lng1 = latlngs[i][0];
+            let lat2 = latlngs[(i + 1) % n][1];
+            let lng2 = latlngs[(i + 1) % n][0];
+
+            let a = lat1 * lng2 - lat2 * lng1; // Shoelace formula part
+            xSum += (lat1 + lat2) * a; // Summing up x-coordinates
+            ySum += (lng1 + lng2) * a; // Summing up y-coordinates
+            areaSum += a; // Summing up areas
+        }
+
+        let area = areaSum / 2;
+        let cx = xSum / (6 * area); // Centroid x-coordinate
+        let cy = ySum / (6 * area); // Centroid y-coordinate
+
+        return [cy, cx]; // Return as [latitude, longitude]
+    }
+
+    /*
+    Mathematical proof for centroid:
+    The centroid (Cx, Cy) of a simple polygon with vertices (x0, y0), (x1, y1), ..., (xn-1, yn-1) is given by:
+
+    Cx = (1/6A) * Σ (xi + xi+1)(xi*yi+1 - xi+1*yi)
+    Cy = (1/6A) * Σ (yi + yi+1)(xi*yi+1 - xi+1*yi)
+
+    where A is the area of the polygon, calculated as:
+    A = (1/2) * Σ (xi*yi+1 - xi+1*yi)
+
+    This is derived from the shoelace formula for the area of a polygon and averaging the coordinates weighted by the area.
+    */
+
+    function computeClusterCentroid(centroids) {
+        let xSum = 0, ySum = 0, n = centroids.length;
+
+        centroids.forEach(centroid => {
+            xSum += centroid[1];
+            ySum += centroid[0];
+        });
+
+        return [ySum / n, xSum / n];
+    }
+
+    function processGeometry(geometry) {
+        let type = geometry.type;
+        let coordinates = geometry.coordinates;
+        let centroids = [];
+        console.log(type);
+        if (type === 'Polygon') {
+            let latlngs = coordinates[0]; // the exterior ring of the polygon. https://geojson.org/geojson-spec.html#polygon
+            centroids.push(computeCentroid(latlngs));
+        } else if (type === 'MultiPolygon') {
+            coordinates.forEach(polygon => {
+                let latlngs = polygon[0]; // like above
+                centroids.push(computeCentroid(latlngs));
+            });
+
+        } else if (type === 'MultiLineString') {
+            coordinates.forEach(line => {
+                centroids.push(computeCentroid(line));
+            });
+        } else if (type === 'GeometryCollection') {
+            geometry.geometries.forEach(geometry => {
+                centroids.push(processGeometry(geometry).centroid)
+            });
+        } else if (type === 'LineString') {
+            centroids.push(computeCentroid(coordinates));
+        } else if (type === 'Point') {
+            centroids.push([coordinates[1], coordinates[0]]);
+        } else if (type === 'MultiPoint') {
+            coordinates.forEach(point => {
+                centroids.push([point[1], point[0]]);
+            });
+
+        }
+
+        let centroid = computeCentroid(centroids)
+
+        return {centroids, centroid};
+    }
+
+    let allCentroids = [];
+
+    function proccessFeature(feature) {
+        let {centroids, centroid} = processGeometry(feature.geometry);
+        allCentroids.push(centroid);
+    }
+
+    if(featureCollection.type === "FeatureCollection") {
+        featureCollection.features.forEach(proccessFeature);
+    } else {
+        console.warn("You have passed a single feature")
+        proccessFeature(featureCollection)
+    }
+
+
+    return allCentroids
+}
+
+
+//########################################################################################
+// cool solution to use the polw of inaccessibility aka the point of maximum distance from any edge
+//########################################################################################
 
 
 
@@ -251,6 +452,56 @@ function getSegDistSq(px, py, a, b) {
     return dx * dx + dy * dy;
 }
 
-polylabel.inyQueue = TinyQueue;
+polylabel.TinyQueue = TinyQueue;
+polylabel.Rectangle = Rectangle;
+polylabel.computeGeoJSONCentroids = computeGeoJSONCentroids;
+//########################################################################################
+// final solution to stretch the polygon so that the label is best placed within an
+// ellipse of inaccessibility therefore giving a nice placement.
+//########################################################################################
 
-// export polylabel;
+
+/**
+ * Thi effectively stretches the input polygon in order to calculate the ellipse of inaccessibility.
+ *  note precision may be effected but should be mostly good enough.
+ * @param rings - array of polygon rings (first is outer rest is inner)
+ * @param ratio -
+ * @return {*[]}
+ */
+polylabel.stretched = (rings, ratio) => {
+    const polygon = [];
+    for (const ring of rings) { // stretch the input
+        const newRing = [];
+        for (const [x, y] of ring) newRing.push([x / ratio, y]);
+        polygon.push(newRing);
+    }
+    const result = polylabel(polygon, 0.5);
+    result[0] *= ratio; // stretch the result back
+    result.distance *= ratio;
+    return result;
+}
+
+/**
+ *
+ * @param geometry - an geojson geometry
+ * @return {*[]}
+ */
+getLabelPos = (geometry) => {
+    let pos;
+    if (geometry.type === 'MultiPolygon') {
+        let maxDist = 0; // for multipolygons, pick the polygon with most available space
+        for (const polygon of geometry.coordinates) {
+            const p = polylabel.stretched(polygon, ratio);
+            if (p.distance > maxDist) {
+                pos = p;
+                maxDist = p.distance;
+            }
+        }
+    } else {
+        pos = polylabel.stretched(geometry.coordinates, ratio);
+    }
+    return pos;
+}
+
+// export default polylabel;
+// module.exports = polylabel;

@@ -7,21 +7,40 @@
     <link crossorigin="anonymous"
           href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css"
           rel="stylesheet"/>
+    <link
+            href="../src/leaflet-labeler.css"
+            rel="stylesheet"/>
     <style>
         #map {
             height: 100vh;
         }
+
+        .leaflet-tooltip.green-tooltip {
+            background-color: rgba(0, 128, 0, 0.79) !important;
+            color: white !important;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
+<input id="ratio" type="range" min=0.0001 max=10 step=0.01 value=0.2 width="100%">
 <div id="map"></div>
 <script crossorigin="anonymous"
         src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <script
-        src="../dist/polylabel.js"></script>
-
+        src="../polylabel.js"></script>
+<script
+        src="../src/leaflet-labeler.js"></script>
 
 <script>
+    var ratioRange = document.getElementById("ratio")
+    var ratio = parseFloat(ratioRange.value);
+
+    ratioRange.oninput = () => {
+        ratio = parseFloat(ratioRange.value);
+        updateLabels(geojson)
+    }
+
     // Initialize the map
     var map = L.map('map').setView([20, 0], 2);
 
@@ -42,40 +61,217 @@
     }
 
 
+    var geojson, labels = [];
+
+    // Function to add labels to the map
+    function updateLabels(_eojson) {
+        geojson = _eojson;
+        if (labels) {
+            labels.forEach(l => {
+                l.remove()
+            })
+            labels = []
+        }
+
+        geojson.features.forEach(f => {
+
+            let pos = getLabelPos(f.geometry);
+            let tooltip = L.tooltip({
+                permanent: true,
+                direction: 'center',
+                className: 'green-tooltip'
+            }).setContent(f.properties.NAME);
+
+            let marker = L.marker([pos[1], pos[0]], {
+                icon: L.divIcon({
+                    className: 'label',
+                    html: '',
+                    iconSize: [0, 0]
+                })
+            }).bindTooltip(tooltip).addTo(map)
+            labels.push(marker)
+
+
+        })
+    }
+
     // Add GeoJSON data
     fetch('https://ne.freemap.online/50m/cultural/ne_50m_admin_0_countries.json')
         .then(response => response.json())
         .then(data => {
+
+
+            labelJson(data, 'NAME', "POP_EST");
+
             var geojsonLayer = L.geoJSON(data, {
                 style: function (feature) {
                     return getStyle(map.getZoom());
                 },
                 onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.NAME) {
-                        var center;
-                        if (feature.geometry.type === "Point") {
-                            center = layer.getLatLng();
-                        } else {
-                            center = layer.getBounds().getCenter();
-                        }
-                        var label = L.marker(center, {
-                            icon: L.divIcon({
-                                className: 'country-label',
-                                html: feature.properties.NAME
-                            })
-                        }).addTo(map);
-                    }
+                    // if (feature.properties && feature.properties.NAME) {
+                    //     var center;
+                    //     if (feature.geometry.type === "Point") {
+                    //         center = layer.getLatLng();
+                    //     } else {
+                    //         center = layer.getBounds().getCenter();
+                    //     }
+                    //     var label = L.marker(center, {
+                    //         icon: L.divIcon({
+                    //             className: 'country-label',
+                    //             html: feature.properties.NAME
+                    //         })
+                    //     }).addTo(map);
+                    // }
+
+
                 }
-            }).addTo(map);
+            })
+            //.addTo(map);
+
+            // updateLabels(data)
+
 
             // Update style on zoom
-            map.on('zoomend', function() {
+            map.on('zoomend', function () {
                 var newZoom = map.getZoom();
-                geojsonLayer.setStyle(function(feature) {
+                geojsonLayer.setStyle(function (feature) {
                     return getStyle(newZoom);
                 });
             });
         });
+
+
+    function getColorFromCountryData(country, redField, greenField, blueField, maxValues) {
+        // Helper function to normalize values between 0 and 255
+        function normalize(value, field) {
+            if (typeof value === 'number') {
+                return Math.max(0, Math.min(255, Math.floor(value * 255)));
+            } else if (typeof value === 'string' && country[value] !== undefined) {
+                return Math.max(0, Math.min(255, Math.floor(country[value] / maxValues[value] * 255)));
+            }
+            return 0; // Default to 0 if value is not valid
+        }
+
+        // Get the color components
+        const red = typeof redField === "number" ? redField : normalize(redField, maxValues[redField]);
+        const green = typeof greenField === "number" ? greenField : normalize(greenField, maxValues[greenField]);
+        const blue = typeof blueField === "number" ? blueField : normalize(blueField, maxValues[blueField]);
+
+        // Convert to hexadecimal color string
+        const color = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
+        return color;
+    }
+
+    function getColorFromCountryData2(country, redField, greenField, blueField, minValues, maxValues, useLogScaling = false) {
+        // Helper function to normalize values between 0 and 255
+        function normalize(value, field, min, max) {
+            if (typeof value === 'number') {
+                return Math.max(0, Math.min(255, Math.floor(value * 255)));
+            } else if (typeof value === 'string' && country[value] !== undefined) {
+                let rawValue = country[value];
+                if (useLogScaling) {
+
+                    rawValue = Math.max(rawValue, 1); // Ensure the value is at least 1 to avoid log(0)
+                    min = Math.max(min, 1);
+                    max = Math.max(max, 1);
+
+                    rawValue = Math.log(rawValue);
+                    min = Math.log(min);
+                    max = Math.log(max);
+                    if (typeof useLogScaling !== "number") {
+                        rawValue = rawValue / Math.log(useLogScaling);
+                        min = min / Math.log(useLogScaling);
+                        max = max / Math.log(useLogScaling);
+                    }
+                }
+                let normalizedValue = (rawValue - min) / (max - min);
+                return Math.max(0, Math.min(255, Math.floor(normalizedValue * 255)));
+            }
+            return 0; // Default to 0 if value is not valid
+        }
+
+        // Get the color components
+        const red = typeof redField === "number" ? Math.max(0, Math.min(255, Math.floor(redField * 255))) :
+            normalize(redField, redField, minValues[redField], maxValues[redField]);
+        const green = typeof greenField === "number" ? Math.max(0, Math.min(255, Math.floor(greenField * 255))) :
+            normalize(greenField, greenField, minValues[greenField], maxValues[greenField]);
+        const blue = typeof blueField === "number" ? Math.max(0, Math.min(255, Math.floor(blueField * 255))) :
+            normalize(blueField, blueField, minValues[blueField], maxValues[blueField]);
+
+        // Convert to hexadecimal color string
+        const color = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
+        return color;
+    }
+
+    function findMinMaxValues(geoJson, properties) {
+        const minValues = {};
+        const maxValues = {};
+
+        // Initialize min and max values for each property
+        properties.forEach(prop => {
+            minValues[prop] = Infinity;
+            maxValues[prop] = -Infinity;
+        });
+
+        // Iterate over each feature in the FeatureCollection
+        geoJson.features.forEach(feature => {
+            properties.forEach(prop => {
+                if (feature.properties && feature.properties[prop] !== undefined) {
+                    const value = feature.properties[prop];
+                    if (value < minValues[prop]) {
+                        minValues[prop] = value;
+                    }
+                    if (value > maxValues[prop]) {
+                        maxValues[prop] = value;
+                    }
+                }
+            });
+        });
+
+        return {minValues, maxValues};
+    }
+
+    const maxValues = {
+        "POP_EST": 1400000000, // Example max population (e.g., China)
+        "GDP_MD_EST": 50000000, // Example max GDP in millions (e.g., USA)
+    };
+
+    // console.log(getColorFromCountryData(country, "POP_EST", "GDP_MD_EST", 0.5, maxValues)); // Outputs a color with the blue component hardcoded to 0.5
+
+    function labelJson(data, field, order) {
+
+        const properties = ["POP_EST", "GDP_MD_EST"];
+        const result = findMinMaxValues(data, properties);
+        // fetch geojson data and create a layer with labels
+        console.log(result)
+        // new layer stored in global variable to make debugging easier
+        window.ll = L.labeler(data, {
+            pointToLayer: (gj, ll) => L.circleMarker(ll, {
+                radius: gj.properties.population ? Math.pow(gj.properties[order], .2) - 1 : 1
+            }),
+            labelProp: 'NAME',
+            labelFunc: l => (`${l.feature.properties[field]} (${l.feature.properties[order]})`),
+            labelPos: 'cc',
+            labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
+            style: (f, l) => {
+                let color = getColorFromCountryData2(f.properties, "POP_EST", 0, 0, result.minValues, result.maxValues, 0)
+                let color2 = getColorFromCountryData2(f.properties, 0, "GDP_MD_EST", 0, result.minValues, result.maxValues, 2)
+
+                return {
+                    color: color2,
+                    weight: 2,
+                    fillColor: color
+                }
+
+            },
+            priorityProp: order,
+            // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
+        }).addTo(map).bindPopup(l => `<pre>${JSON.stringify(l.feature.properties, null, 2)}</pre>`);
+
+
+    }
+
+
 </script>
 </body>
 </html>
