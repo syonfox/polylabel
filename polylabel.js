@@ -468,7 +468,7 @@ polylabel.computeGeoJSONCentroids = computeGeoJSONCentroids;
  * @param ratio -
  * @return {*[]}
  */
-polylabel.stretched = (rings, ratio) => {
+polylabel.stretched = (rings, ratio=1.5) => {
     const polygon = [];
     for (const ring of rings) { // stretch the input
         const newRing = [];
@@ -486,7 +486,7 @@ polylabel.stretched = (rings, ratio) => {
  * @param geometry - an geojson geometry
  * @return {*[]}
  */
-polylabel.getLabelPos = (geometry) => {
+polylabel.getLabelPos = (geometry, ratio = 1.5) => {
     let pos;
     if (geometry.type === 'MultiPolygon') {
         let maxDist = 0; // for multipolygons, pick the polygon with most available space
