@@ -5,6 +5,11 @@ A plugin by syonfox, with thanks to everyone behind Polylabel and Leaflet, and m
 
 `MIT / WTFPL`
 
+[![GitHub Repo](https://img.shields.io/badge/View%20on%20GitHub-gray?style=flat-square&logo=github)](https://github.com/syonfox/polylabel)
+[![Example](https://img.shields.io/badge/See%20Example-blue?style=flat-square)](https://polylabel.pages.dev/example)
+[![Npm](https://img.shields.io/badge/Npm-red?style=flat-square&logo=npm)](https://www.npmjs.com/package/leaflet-polylabel)
+
+
 ## Todo
 
 - Clean up and document more

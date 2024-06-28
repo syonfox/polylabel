@@ -19,12 +19,15 @@
             color: #ffffff;
             text-align: center;
             padding: 2rem 0;
+            overflow: hidden; /* Ensure content doesn't overflow on small screens */
         }
         header h1 {
             margin: 0;
+            font-size: 2rem; /* Increase font size for better readability */
         }
         .content {
             flex: 1;
+            width: 100%; /* Ensure content takes full width */
             max-width: 800px;
             margin: 2rem auto;
             padding: 1rem;
@@ -32,6 +35,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align: center;
+            overflow: hidden; /* Ensure content doesn't overflow on small screens */
         }
         .content img {
             max-width: 100%;
@@ -44,6 +48,8 @@
             padding: 1rem 0;
             background: #004d40;
             color: #ffffff;
+            width: 100%; /* Ensure footer takes full width */
+            overflow: hidden; /* Ensure content doesn't overflow on small screens */
         }
         .btn {
             display: inline-block;
@@ -70,7 +76,6 @@
             padding: 2px 4px;
             border-radius: 3px;
             text-align: left;
-
         }
     </style>
 </head>
@@ -86,11 +91,8 @@
     <p>
         <a href="https://github.com/syonfox/polylabel" class="btn">View on GitHub</a>
         <a href="https://polylabel.pages.dev/example" class="btn">See Example</a>
+        <a href="https://www.npmjs.com/package/leaflet-polylabel" class="btn">Npm</a>
     </p>
-    <p>This version has the stretched modification that allows you to select even more optimal
-        centers by finding a ellipsis of inaccessibility. This leverages the fact that
-    labels are generally more wide then tall. </p>
-
 
     <h1>Polylabel Documentation</h1>
 
