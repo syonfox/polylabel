@@ -1,72 +1,101 @@
 
-# L.polylabel.js
+# Leaflet Polylabel Plugin
 
-`a plugin bysyonfox, thanks to everythonw behind polylabel and leaflet and many more.`
+A plugin by syonfox, with thanks to everyone behind Polylabel and Leaflet, and many more.
 
-`MIT / WTFYP`
+`MIT / WTFPL`
 
-### dod clean up and document more
+## Todo
 
-### install
+- Clean up and document more
+
+## Installation
 
 ```sh
-npm install endpoint-polylabel
-cp node_modules/endpoint-polylabel/dist/polylabel.js src/lib/polylabel.js
+npm install leaflet-polylabel
+cp node_modules/endpoint-polylabel/dist/L.polylabel.js src/lib/L.polylabel.js
 ```
 
-### include 
+## Include
 
 ```html
-<script src="/lib/polylabel.js"></script>></script>
+<script src="/lib/L.polylabel.js"></script>
 <div id="map"></div>
 ```
 
-### usage 
+## Usage
 
 ```js
-let map = L.map("#map")
+let map = L.map("#map");
 
-
+// Function to fetch and label GeoJSON data
 async function labelGeoJson(url) {
-    
-    
-    let res = await fetch(url)
-    let data = await res.json()
-    
-    window.ll = L.labeler(data, {
+    let res = await fetch(url);
+    let data = await res.json();
+
+    window.ll = L.polylabel(data, {
         pointToLayer: (gj, ll) => L.circleMarker(ll, {
-            radius: gj.properties.population ? Math.pow(gj.properties[order], .2) - 1 : 1
+            radius: gj.properties.population ? Math.pow(gj.properties[order], 0.2) - 1 : 1
         }),
         labelProp: 'NAME',
         labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties[order])})`),
         labelPos: 'cc',
-        labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
+        labelStyle: { textTransform: 'uppercase', fontWeight: 'bold' },
         style: (f, l) => {
             return {
                 color: "#000",
                 weight: 2,
                 fillColor: "#fff"
-            }
-
+            };
         },
         priorityProp: order,
-        // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
-    }).addTo(map).bindPopup(l => {
-
-        return generateCountryCard(l.feature.properties)
-    });
-    // let layer = L.polylabel(geojson, {
-    //     ratio: 1.5, // default, set to 1 for default poal of inacesability without stre4atch
-    //    
-    //    
-    // })
-    //
-    
+        stretchRatio: 1.5
+    }).addTo(map).bindPopup(l => generateCountryCard(l.feature.properties));
 }
 
-labelGeoJson("https://ne.freemap.online/110m/physical/ne_110m_lakes.json")
+// Call the function with your GeoJSON URL
+labelGeoJson("https://ne.freemap.online/110m/physical/ne_110m_lakes.json");
 ```
 
+## Options
+
+### L.polylabel(data, options)
+
+The `L.polylabel` function extends Leaflet's labeling capabilities using the Polylabel algorithm. It adds labels to your GeoJSON data with enhanced placement and styling options.
+
+#### Options
+
+- `pointToLayer`: Function to convert GeoJSON point feature to a leaflet layer.
+- `labelProp`: Property name in GeoJSON features to use as the label text.
+- `labelFunc`: Function to format the label text.
+- `labelPos`: Position of the label. Default is 'cc' (center-center).
+- `labelStyle`: CSS style for the label text.
+- `style`: Function to style the feature layers.
+- `priorityProp`: Property name to determine the rendering priority of labels.
+- `stretchRatio`: Ratio to stretch the label for better fit. Default is 1.5.
+
+## Example
+
+```js
+L.polylabel(data, {
+    pointToLayer: (gj, ll) => L.circleMarker(ll, {
+        radius: gj.properties.population ? Math.pow(gj.properties[order], 0.2) - 1 : 1
+    }),
+    labelProp: 'NAME',
+    labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties[order])})`),
+    labelPos: 'cc',
+    labelStyle: { textTransform: 'uppercase', fontWeight: 'bold' },
+    style: (f, l) => ({
+        color: "#000",
+        weight: 2,
+        fillColor: "#fff"
+    }),
+    priorityProp: order,
+    stretchRatio: 1.5
+}).addTo(map).bindPopup(l => generateCountryCard(l.feature.properties));
+```
+
+This plugin enhances Leaflet's labeling capabilities by leveraging the Polylabel algorithm to ensure optimal label placement within complex polygons. The added `stretchRatio` option allows for better control over label stretching to fit within larger polygons.
 ## Other work 
 https://plnkr.co/edit/grF2TZdRS6P9YqW9?preview
 https://observablehq.com/@kotelnikov/labeling-with-stretched-polylabel-updated
