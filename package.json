@@ -4,7 +4,7 @@
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
   "scripts": {
-    "build": "bash concat.sh polylabel.js src/leaflet-labeler.js dist/polylabel.js"
+    "build": "bash concat.sh ./src/polylabel.js src/leaflet-labeler.js dist/L.polylabel.js"
   },
   "keywords": [],
   "author": "Vladimir Agafonkin, updated by davis tec and then syonfox.",

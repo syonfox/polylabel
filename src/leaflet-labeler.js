@@ -19,7 +19,8 @@ L.polylabelPrototype = {
         labelPane: 'tooltipPane',
         viewFilter: null,
         labelStyle: {},
-        changingMarker: false
+        changingMarker: false,
+        stretchRatio: 1.5, // less then one bias for 'tall' labels greater then on for 'long'
     },
 
     _labels: {},
@@ -28,7 +29,7 @@ L.polylabelPrototype = {
 
     onAdd(map) {
 
-        // these are the leafelt deaful;t animation setting we apply these to the labels
+        // these are the leaflet default animation setting we apply these to the labels
         this._zoomAnimated = map._zoomAnimated;
         this.__zoomDuration = 250;
         this.__zoomAnimation = "cubic-bezier(0,0,0.25,1)"
@@ -293,7 +294,7 @@ L.polylabelPrototype = {
         // let latLng = layer.getLatLng ? layer.getLatLng() :
         //     geomType.endsWith('Polygon') ? L.PolyUtil.polygonCenter(layer._defaultShape(), L.CRS.EPSG3857)
         //         : L.LineUtil.polylineCenter(layer._defaultShape(), L.CRS.EPSG3857);
-        let latLng = layer.getLatLng ? layer.getLatLng() : polylabel.getLabelPos(layer.feature.geometry).reverse()
+        let latLng = layer.getLatLng ? layer.getLatLng() : polylabel.getLabelPos(layer.feature.geometry, this.options.stretchRatio).reverse()
 
         this._labels[layerId] = {
             label: label,
@@ -325,7 +326,7 @@ L.polylabelPrototype = {
     }
 }
 
-L.Labeler = L.GeoJSON.extend(L.polylabelPrototype);
-L.labeler = function (layers, options) {
-    return new L.Labeler(layers, options);
+L.Polylabel = L.GeoJSON.extend(L.polylabelPrototype);
+L.polylabel = function (layers, options) {
+    return new L.Polylabel(layers, options);
 }
