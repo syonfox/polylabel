@@ -31,35 +31,25 @@
         src="../polylabel.js"></script>
 <script
         src="../src/leaflet-labeler.js"></script>
+<script
+        src="../src/geomArea.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.3.0/turf.min.js"></script>
 
 <script>
+
+
     var ratioRange = document.getElementById("ratio")
     var ratio = parseFloat(ratioRange.value);
 
     ratioRange.oninput = () => {
         ratio = parseFloat(ratioRange.value);
-        updateLabels(geojson)
+        // updateLabels(geojson)
     }
 
     // Initialize the map
     var map = L.map('map').setView([20, 0], 2);
 
-    map._zoomAnimated = 1;
-    // // Add OpenStreetMap tile layer
-    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    //     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    // }).addTo(map);
-
-    // Function to set style depending on zoom level
-    function getStyle(zoom) {
-        return {
-            color: 'blue',
-            weight: zoom < 5 ? 1 : 2,
-            opacity: 1,
-            fillOpacity: 0.5,
-            fillColor: 'lightblue'
-        };
-    }
+    // map._zoomAnimated = 1;
 
 
     var geojson, labels = [];
@@ -96,53 +86,60 @@
         })
     }
 
+    /**
+     * Calculates the Economic Power Index for a country.
+     * @param {number} gdp - The GDP of the country (in dollars).
+     * @param {number} population - The population of the country.
+     * @param {number} landMass - The land mass of the country (in square kilometers).
+     * @param {number} alpha - The weight for GDP per capita (default is 0.4).
+     * @param {number} beta - The weight for GDP per unit area (default is 0.2).
+     * @param {number} gamma - The weight for population (default is 0.4).
+     * @returns {number} The Economic Power Index.
+     */
+    function calculateEconomicPowerIndex(gdp, population, landMass, alpha = 0.4, beta = 0.2, gamma = 0.5) {
+        const gdpPerCapita = gdp / Math.max(1, population);
+        const gdpPerUnitArea = gdp / Math.max(1, landMass);
+        //idk if this is good just made it up ;)
+        return Math.pow(gdpPerCapita, alpha) * Math.pow(gdpPerUnitArea, beta) * Math.pow(population, gamma);
+    }
+
     // Add GeoJSON data
     fetch('https://ne.freemap.online/50m/cultural/ne_50m_admin_0_countries.json')
         .then(response => response.json())
         .then(data => {
+            let t1 = Date.now();
+            data.features = data.features.map(f => {
 
-             data.features = data.features.map(f=>{
-                f.properties.GDP_PER_CAP = f.properties.GDP_MD_EST*1000000 / f.properties.POP_EST
-                 return f;
+                let gdp = f.properties.GDP_MD_EST * 1000000
+                let pop = f.properties.POP_EST;
+                let area = turf.area(f); //m
+                f.properties.GDP_PER_CAP = (gdp / Math.max(1, pop))
+
+                f.properties.AREA_KM2 = (area / 1e6)
+                // f.properties.MY_AREA_KM2 = geomArea(f);
+
+
+                f.properties.EPI = calculateEconomicPowerIndex(gdp, pop, f.properties.AREA_KM2)
+
+                f.properties.POP_PER_KM2 = (pop / f.properties.AREA_KM2)
+                if (f.properties.POP_PER_KM2 > 800) {
+                    f.properties.POP_PER_KM2_CLAMP = Math.log(800)
+                    console.warn("contry to dense", f);
+                }  if (f.properties.POP_PER_KM2 <2 ) {
+                     f.properties.POP_PER_KM2_CLAMP = 0
+                } else {
+                    f.properties.POP_PER_KM2_CLAMP = Math.log(f.properties.POP_PER_KM2)
+                } // so that scale of red is kind of normall
+
+
+                return f;
             })
 
-            labelJson(data, 'NAME', "POP_EST");
+            console.log("Added (gdp per capita and area / pop per km2 in : ", Date.now() - t1, "ms");
 
-            // var geojsonLayer = L.geoJSON(data, {
-            //     style: function (feature) {
-            //         return getStyle(map.getZoom());
-            //     },
-            //     onEachFeature: function (feature, layer) {
-            //         // if (feature.properties && feature.properties.NAME) {
-            //         //     var center;
-            //         //     if (feature.geometry.type === "Point") {
-            //         //         center = layer.getLatLng();
-            //         //     } else {
-            //         //         center = layer.getBounds().getCenter();
-            //         //     }
-            //         //     var label = L.marker(center, {
-            //         //         icon: L.divIcon({
-            //         //             className: 'country-label',
-            //         //             html: feature.properties.NAME
-            //         //         })
-            //         //     }).addTo(map);
-            //         // }
-            //
-            //
-            //     }
-            // })
-            //.addTo(map);
-
-            // updateLabels(data)
+            labelJson(data, 'NAME', "AREA_KM2");
 
 
-            // Update style on zoom
-            // map.on('zoomend', function () {
-            //     var newZoom = map.getZoom();
-            //     geojsonLayer.setStyle(function (feature) {
-            //         return getStyle(newZoom);
-            //     });
-            // });
         });
 
 
@@ -205,6 +202,7 @@
 
         // Convert to hexadecimal color string
         const color = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
+        console.log(color);
         return color;
     }
 
@@ -243,22 +241,26 @@
 
     // console.log(getColorFromCountryData(country, "POP_EST", "GDP_MD_EST", 0.5, maxValues)); // Outputs a color with the blue component hardcoded to 0.5
 
-function formatNumber(num) {
-    if (num < 1e6) {
-        return num.toString();
-    } else if (num >= 1e6 && num < 1e9) {
-        return (num / 1e6).toFixed(0).replace(/\.000$/, '') + 'M';
-    } else if (num >= 1e9 && num < 1e12) {
-        return (num / 1e9).toFixed(0).replace(/\.000$/, '') + 'B';
-    } else if (num >= 1e12 && num < 1e15) {
-        return (num / 1e12).toFixed(0).replace(/\.000$/, '') + 'T';
-    } else {
-        return num.toString();
+    function formatNumber(num) {
+        if (typeof num != "number") num = parseFloat(num);
+        if (num < 1e6) {
+            return num.toString();
+        } else if (num >= 1e6 && num < 1e9) {
+            return (num / 1e6).toFixed(0).replace(/\.000$/, '') + 'M';
+        } else if (num >= 1e9 && num < 1e12) {
+            return (num / 1e9).toFixed(0).replace(/\.000$/, '') + 'B';
+        } else if (num >= 1e12 && num < 1e15) {
+            return (num / 1e12).toFixed(0).replace(/\.000$/, '') + 'T';
+        } else {
+            return num.toString();
+        }
     }
-}
+
     function labelJson(data, field, order) {
 
-        const properties = [ "GDP_PER_CAP","POP_EST"];
+
+        const properties = ["POP_PER_KM2_CLAMP", "GDP_PER_CAP", "EPI"];
+
         const result = findMinMaxValues(data, properties);
         // fetch geojson data and create a layer with labels
         console.log(result)
@@ -268,12 +270,12 @@ function formatNumber(num) {
                 radius: gj.properties.population ? Math.pow(gj.properties[order], .2) - 1 : 1
             }),
             labelProp: 'NAME',
-            labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties[order])})`),
+            labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties["POP_PER_KM2"].toFixed(1))}p/km²) (${formatNumber(l.feature.properties[properties[1]].toFixed(0))}$/p) (${formatNumber(l.feature.properties[properties[2]].toFixed(0))})`),
             labelPos: 'cc',
             labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
             style: (f, l) => {
-                let color = getColorFromCountryData2(f.properties, properties[0], 0, 0, result.minValues, result.maxValues, 0)
-                let color2 = getColorFromCountryData2(f.properties, 0, properties[1], 0, result.minValues, result.maxValues, 0)
+                let color = getColorFromCountryData2(f.properties, properties[0], 0, properties[2], result.minValues, result.maxValues, 0)
+                let color2 = getColorFromCountryData2(f.properties, 0, properties[1], 0, result.minValues, result.maxValues, 2)
 
                 return {
                     color: color2,
@@ -290,13 +292,12 @@ function formatNumber(num) {
         });
 
 
-
     }
 
 
     function generateCountryCard(p) {
 
-        let gdp_per_cap = p.GDP_MD_EST*1000000 / p.POP_EST
+        let gdp_per_cap = p.GDP_MD_EST * 1000000 / p.POP_EST
 
         return `
     <div class="country-card">
@@ -306,7 +307,9 @@ function formatNumber(num) {
       <p><strong>Type:</strong> ${p.TYPE}</p>
       <p><strong>Population Estimate:</strong> ${p.POP_EST >= 1000000 ? (p.POP_EST / 1000000).toFixed(2) + "M" : p.POP_EST}</p>
       <p><strong>GDP (Million USD):</strong> ${p.GDP_MD_EST}</p>
-      <p><strong>GDP (USD / Person):</strong> ${gdp_per_cap.toFixed(0)}</p>
+      <p><strong>GDP (USD / Person):</strong> ${p.GDP_PER_CAP}</p>
+      <p><strong>Population Density (Persons/ KM2):</strong> ${p.POP_PER_KM2}</p>
+      <p><strong>Area (KM2):</strong> ${p.AREA_KM2}</p>
 
       <p><strong>Economy Classification:</strong> ${p.ECONOMY}</p>
       <p><strong>Income Group:</strong> ${p.INCOME_GRP}</p>

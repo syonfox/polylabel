@@ -99,10 +99,12 @@ L.polylabelPrototype = {
               }
           }
       },*/
+
+    // A function called when zoom animation is trigered.
     _zoomAnim(e) {
         this._zoom_trigger_time = Date.now()
         // console.log("zooming")
-        this.__hasUpdateded = false;
+        // this.__hasUpdateded = false;
         // this._update();
         // return;
 
@@ -121,14 +123,6 @@ L.polylabelPrototype = {
                 ls.style.left = `${pos.x}px`;
             }
         }
-
-        // this._zoom_delta = Date.now() - this._zoom_trigger_time
-        // let update_delay = 250 - this._last_zoom_delta - this._zoom_delta
-        // console.log(update_delay)
-    /*    setTimeout(()=>{
-            this._update()
-        }, 200)*/
-
     },
 
 
@@ -143,14 +137,15 @@ L.polylabelPrototype = {
         L.GeoJSON.prototype.addData.call(this, geojson);
     },
 
+    //internal function called when leaflet trigers update( after zoomend/ panend/ animation)
     _update() {
-        if(this.__hasUpdateded && this._zoomAnimated) {
-            return;
-        } else {
-            this.__hasUpdateded = true;
-        }
-
+        // if(this.__hasUpdateded && this._zoomAnimated) {
+        //     return;
+        // } else {
+        //     this.__hasUpdateded = true;
+        // }
         this._update_trigger_time = Date.now()
+
         this._last_zoom_delta = this._update_trigger_time - this._zoom_trigger_time;
         console.log('updating, ms delta since zoom = ', this._last_zoom_delta);
         let t1 = Date.now();
@@ -161,7 +156,10 @@ L.polylabelPrototype = {
         let bb;
         L.DomUtil.toFront(this._container);
         let maptr = this._map._panes.mapPane.style.transform.substring(12).split(', ');
-        let mapx1 = -parseFloat(maptr[0]), mapy1 = -parseFloat(maptr[1]);
+
+        let mapx1 = -parseFloat(maptr[0]),
+            mapy1 = -parseFloat(maptr[1]);
+
         let mapx2 = mapx1 + this._map._container.clientWidth,
             mapy2 = mapy1 + this._map._container.clientHeight;
 
@@ -260,9 +258,8 @@ L.polylabelPrototype = {
         }
         this._container.childNodes.forEach(n => n.style.visibility = ''); // set all remaining label visible
         let t2 = Date.now();
+        console.log('zoom to update delta: ' + this._zoom_delta + ' ms');
         console.log('update completed in ' + ((t2 - t1)).toFixed(1) + ' ms');
-        console.log('zoom delta: ' + this._zoom_delta + ' ms');
-
         console.log('number of labels: ' + this._bbs.length / 2);
     },
 

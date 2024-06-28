@@ -5,17 +5,19 @@
 
 `MIT / WTFYP`
 
+### dod clean up and document more
+
 ### install
 
 ```sh
 npm install endpoint-polylabel
-cp node_modules/endpoint-polylabel/dist/L.polylabel.js src/lib/L.polylabel.js
+cp node_modules/endpoint-polylabel/dist/polylabel.js src/lib/polylabel.js
 ```
 
 ### include 
 
 ```html
-<script src="/lib/L.polylabel.js"></script>></script>
+<script src="/lib/polylabel.js"></script>></script>
 <div id="map"></div>
 ```
 
@@ -64,7 +66,11 @@ async function labelGeoJson(url) {
 
 labelGeoJson("https://ne.freemap.online/110m/physical/ne_110m_lakes.json")
 ```
-     
+
+## Other work 
+https://plnkr.co/edit/grF2TZdRS6P9YqW9?preview
+https://observablehq.com/@kotelnikov/labeling-with-stretched-polylabel-updated
+
 ## polylabel [![Build Status](https://travis-ci.org/mapbox/polylabel.svg?branch=master)](https://travis-ci.org/mapbox/polylabel)
 
 A fast algorithm for finding polygon _pole of inaccessibility_,

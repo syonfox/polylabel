@@ -1,3 +1,6 @@
+
+//Taken and consendes from turf
+
 // Constants for spherical calculations
 const PI_OVER_180 = Math.PI / 180;
 const EARTH_RADIUS = 6371; // Earth's average radius in kilometers
@@ -8,7 +11,7 @@ const EARTH_RADIUS = 6371; // Earth's average radius in kilometers
  * @param {Number} radius Optional. Earth's radius in kilometers. Defaults to Earth's average radius.
  * @returns {Number} The total area in square kilometers.
  */
-function geomarea(geojson, radius = EARTH_RADIUS) {
+function geomArea(geojson, radius = EARTH_RADIUS) {
     let totalArea = 0;
 
     // Iterate over each geometry in the GeoJSON object
