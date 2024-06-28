@@ -10,7 +10,7 @@
  */
 
 // let L;
-L.Labeler = L.GeoJSON.extend({
+L.polylabelPrototype = {
     options: {
         labelProp: 'name',
         labelPos: 'auto',
@@ -24,12 +24,20 @@ L.Labeler = L.GeoJSON.extend({
 
     _labels: {},
     _visibleLayers: [],
-    _posOrder: ['r', 'l'],
+    _posOrder: ['cc', 'r', 'l'],
 
     onAdd(map) {
+
+        // these are the leafelt deaful;t animation setting we apply these to the labels
         this._zoomAnimated = map._zoomAnimated;
+        this.__zoomDuration = 250;
+        this.__zoomAnimation = "cubic-bezier(0,0,0.25,1)"
+        //todo we should realy update labels while animation is hapening so we are ready to display after the fact.
+
+
         if (this.options.labelPos != 'auto')
             this._posOrder = [this.options.labelPos];
+
         L.GeoJSON.prototype.onAdd.call(this, map);
         // create label priority list
         this._priOrder = [];
@@ -42,6 +50,7 @@ L.Labeler = L.GeoJSON.extend({
         //console.log(this._priOrder);
         this._container = L.DomUtil.create('div', '', map.getPane(this.options.labelPane));
         this._update();
+        return;
     },
 
     getEvents() {
@@ -52,6 +61,7 @@ L.Labeler = L.GeoJSON.extend({
         }
         if (this._zoomAnimated)
             events.zoomanim = this._zoomAnim;
+
         return events;
     },
 
@@ -71,21 +81,56 @@ L.Labeler = L.GeoJSON.extend({
                 pos.x -= label.anchor[0] + ls.clientWidth / 2;
                 pos.y -= label.anchor[1] + ls.clientHeight / 2;
                 break;
+            default:
+                pos.x = label.anchor[0];
+                pos.y = label.anchor[1];
         }
     },
 
+    /*  _zoomAnim(e) {
+          for (let l in this._labels) {
+              let lab = this._labels[l];
+              let ls = lab.span;
+              if (ls) {
+                  let pos = this._map._latLngToNewLayerPoint(lab.latLng, e.zoom, e.center);
+                  this._addOffset(pos, lab.pos, this.options.gap, lab);
+                  ls.style.top = `${pos.y}px`;
+                  ls.style.left = `${pos.x}px`;
+              }
+          }
+      },*/
     _zoomAnim(e) {
+        this._zoom_trigger_time = Date.now()
+        // console.log("zooming")
+        this.__hasUpdateded = false;
+        // this._update();
+        // return;
+
+        // Calculate new positions for all labels
+        // const newPositions = {};
         for (let l in this._labels) {
             let lab = this._labels[l];
             let ls = lab.span;
             if (ls) {
                 let pos = this._map._latLngToNewLayerPoint(lab.latLng, e.zoom, e.center);
                 this._addOffset(pos, lab.pos, this.options.gap, lab);
+                // newPositions[l] = pos;
+                if (this._zoomAnimated)  // Smooth animation using CSS transitions or requestAnimationFrame
+                    ls.style.transition = `top ${this.__zoomDuration}ms ${this.__zoomAnimation}, left ${this.__zoomDuration}ms ${this.__zoomAnimation}`;
                 ls.style.top = `${pos.y}px`;
                 ls.style.left = `${pos.x}px`;
             }
         }
+
+        // this._zoom_delta = Date.now() - this._zoom_trigger_time
+        // let update_delay = 250 - this._last_zoom_delta - this._zoom_delta
+        // console.log(update_delay)
+    /*    setTimeout(()=>{
+            this._update()
+        }, 200)*/
+
     },
+
 
     _intersects(bb1, bb2) {
         // checks if two bounding boxes intersect
@@ -99,8 +144,18 @@ L.Labeler = L.GeoJSON.extend({
     },
 
     _update() {
+        if(this.__hasUpdateded && this._zoomAnimated) {
+            return;
+        } else {
+            this.__hasUpdateded = true;
+        }
+
+        this._update_trigger_time = Date.now()
+        this._last_zoom_delta = this._update_trigger_time - this._zoom_trigger_time;
+        console.log('updating, ms delta since zoom = ', this._last_zoom_delta);
         let t1 = Date.now();
-        console.log('updating');
+
+
         this._container.innerHTML = '';
         this._bbs = []; // array of bounding boxes.
         let bb;
@@ -205,7 +260,9 @@ L.Labeler = L.GeoJSON.extend({
         }
         this._container.childNodes.forEach(n => n.style.visibility = ''); // set all remaining label visible
         let t2 = Date.now();
-        console.log('update completed in ' + ((t2 - t1) / 1000).toFixed(1) + ' s');
+        console.log('update completed in ' + ((t2 - t1)).toFixed(1) + ' ms');
+        console.log('zoom delta: ' + this._zoom_delta + ' ms');
+
         console.log('number of labels: ' + this._bbs.length / 2);
     },
 
@@ -269,8 +326,9 @@ L.Labeler = L.GeoJSON.extend({
         this._viewFilter = f;
         this._update();
     }
-});
+}
 
+L.Labeler = L.GeoJSON.extend(L.polylabelPrototype);
 L.labeler = function (layers, options) {
     return new L.Labeler(layers, options);
 }

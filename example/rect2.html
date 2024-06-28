@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map with Rectangle Areas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <style>
+        #map {
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const R = 6371; // Earth's radius in kilometers
+
+    // Helper function to calculate haversine distance
+    function haversine(lat1, lon1, lat2, lon2) {
+        const toRadians = degrees => degrees * Math.PI / 180;
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Function to calculate area using shoelace formula
+    function calculateShoelaceArea(vertices) {
+        let area = 0;
+        const n = vertices.length;
+
+        for (let i = 0; i < n; i++) {
+            const j = (i + 1) % n;
+            area += vertices[i].lon * vertices[j].lat;
+            area -= vertices[j].lon * vertices[i].lat;
+        }
+
+        area = Math.abs(area) / 2;
+        return area;
+    }
+
+    // Function to calculate area using spherical excess formula
+    function calculateSphericalExcessArea(vertices) {
+        let totalArea = 0;
+        const n = vertices.length;
+
+        for (let i = 0; i < n; i++) {
+            const lat1 = vertices[i].lat;
+            const lon1 = vertices[i].lon;
+            const lat2 = vertices[(i + 1) % n].lat;
+            const lon2 = vertices[(i + 1) % n].lon;
+
+            const a = haversine(lat1, lon1, lat2, lon2);
+
+            const lat3 = vertices[(i + 2) % n].lat;
+            const lon3 = vertices[(i + 2) % n].lon;
+
+            const b = haversine(lat2, lon2, lat3, lon3);
+            const c = haversine(lat3, lon3, lat1, lon1);
+
+            const s = (a + b + c) / 2;
+            const tanS2 = Math.tan(s / 2) * Math.tan((s - a) / 2) * Math.tan((s - b) / 2) * Math.tan((s - c) / 2);
+            const excess = 4 * Math.atan(Math.sqrt(Math.abs(tanS2)));
+
+            totalArea += excess;
+        }
+
+        return totalArea * R * R;
+    }
+
+    // Initialize Leaflet map
+    const map = L.map('map').setView([0, 0], 2); // Centered at (0, 0), zoom level 2
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Example rectangles (latitude, longitude, width in degrees, height in degrees)
+    const rectangles = [
+        {lat: 0, lon: 0, width: 10, height: 5},
+        {lat: 10, lon: -10, width: 7, height: 3},
+        {lat: -20, lon: 30, width: 12, height: 8},
+        {lat: 40, lon: -60, width: 6, height: 4},
+        {lat: -30, lon: 100, width: 9, height: 6}
+    ];
+
+    // Draw rectangles on the map and calculate areas
+    rectangles.forEach((rect, index) => {
+        const {lat, lon, width, height} = rect;
+
+        // Define rectangle corners
+        const corners = [
+            {lat: lat, lon: lon},
+            {lat: lat + height, lon: lon},
+            {lat: lat + height, lon: lon + width},
+            {lat: lat, lon: lon + width},
+            {lat: lat, lon: lon}  // Close the polygon
+        ];
+
+        // Create a Leaflet polygon
+        const polygon = L.polygon(corners, {color: 'blue'}).addTo(map);
+
+        // Calculate areas
+        const shoelaceArea = calculateShoelaceArea(corners);
+        const sphericalExcessArea = calculateSphericalExcessArea(corners);
+
+        // Display areas as popups that stay open
+        const popupContent = `
+            <b>Rectangle ${index + 1}</b><br>
+            Shoelace Area: ${shoelaceArea.toFixed(3)} sq km<br>
+            Spherical Excess Area: ${sphericalExcessArea.toFixed(3)} sq km
+        `;
+        polygon.bindPopup(popupContent).openPopup();
+    });
+</script>
+
+</body>
+</html>

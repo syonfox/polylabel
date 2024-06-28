@@ -1,4 +1,4 @@
-
+// included here becuse dont want to need a dependancy. and its tiny ;)
 class TinyQueue {
     constructor(data = [], compare = defaultCompare) {
         this.data = data;
@@ -114,6 +114,16 @@ class Rectangle {
 
     getArea() {
         return this.width * this.height;
+    }
+    //https://stackoverflow.com/a/30316500/4530300 comments ;)
+    //Haversine Formula in Javascript
+    _distKM(lat1,lon1,lat2,lon2){
+        let a=Math;
+        let r=(lat2-lat1)*a.PI/180;
+        let c=(lon2-lon1)*a.PI/180;
+        let e=a.sin(r/2)*a.sin(r/2) +a.cos(lat1*a.PI/180)*a.cos(lat2*a.PI/180)*a.sin(c/2)*a.sin(c/2);
+        let d=2*a.atan2(a.sqrt(e),a.sqrt(1-e))*6371;
+        return d;
     }
 
     getTopLeft() {
@@ -454,6 +464,7 @@ function getSegDistSq(px, py, a, b) {
 
 polylabel.TinyQueue = TinyQueue;
 polylabel.Rectangle = Rectangle;
+
 polylabel.computeGeoJSONCentroids = computeGeoJSONCentroids;
 //########################################################################################
 // final solution to stretch the polygon so that the label is best placed within an
@@ -505,3 +516,4 @@ polylabel.getLabelPos = (geometry, ratio = 1.5) => {
 
 // export default polylabel;
 // module.exports = polylabel;
+//ensure there is one whitspace line ;)

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map with Rectangle Areas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <style>
+        #map {
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.3.0/turf.min.js"></script>
+<script src="../src/polyarea.js"></script>
+<script src="../src/geomArea.js"></script>
+
+<script>
+    // Initialize Leaflet map
+    const map = L.map('map').setView([0, 0], 2); // Centered at (0, 0), zoom level 2
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Example rectangles (latitude, longitude, width in degrees, height in degrees)
+    const rectangles = [
+        {lat: 0, lon: 0, width: 10, height: 5},
+        {lat: 10, lon: -10, width: 7, height: 3},
+        {lat: -20, lon: 30, width: 12, height: 8},
+        {lat: 40, lon: -60, width: 6, height: 4},
+        {lat: -30, lon: 100, width: 9, height: 6}
+    ];
+
+
+    rectangles.forEach((rect, index) => {
+        const {lat, lon, width, height} = rect;
+
+        // Define rectangle corners
+        const corners = [
+            [lat, lon],
+            [lat + height, lon],
+            [lat + height, lon + width],
+            [lat, lon + width],
+            [lat, lon]  // Close the polygon
+        ];
+
+        // Create a Leaflet polygon
+        const polygon = L.polygon(corners, {color: 'blue'}).addTo(map);
+
+        // Calculate areas using Turf.js and polyarea.js library
+        const turfPolygon = turf.polygon([corners]);
+
+        const sphericalExcessArea = polyarea.rectangleArea(lat, lon, width, height, 0);
+        const rectangleArea = polyarea.rectangleArea(lat, lon, width, height, 1);
+
+        // Calculate area using Turf.js (in square kilometers)
+        const turfArea = turf.area(turfPolygon) / 1e6;
+        const tta = polygonArea(turfPolygon) / 1e6;
+
+        // Display areas as popups that stay open
+        const popupContent = `
+        <b>Rectangle ${index + 1}</b><br>
+        Spherical Excess Area: ${sphericalExcessArea.toFixed(3)} sq km<br>
+        Rectangle Area: ${rectangleArea.toFixed(3)} sq km<br>
+        Turf.js Area: ${turfArea.toFixed(3)} sq km
+        tta Area: ${turfArea.toFixed(3)} sq km
+
+    `;
+        polygon.bindPopup(popupContent).openPopup();
+    });
+</script>
+
+</body>
+</html>

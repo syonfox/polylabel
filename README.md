@@ -1,3 +1,70 @@
+
+# L.polylabel.js
+
+`a plugin bysyonfox, thanks to everythonw behind polylabel and leaflet and many more.`
+
+`MIT / WTFYP`
+
+### install
+
+```sh
+npm install endpoint-polylabel
+cp node_modules/endpoint-polylabel/dist/L.polylabel.js src/lib/L.polylabel.js
+```
+
+### include 
+
+```html
+<script src="/lib/L.polylabel.js"></script>></script>
+<div id="map"></div>
+```
+
+### usage 
+
+```js
+let map = L.map("#map")
+
+
+async function labelGeoJson(url) {
+    
+    
+    let res = await fetch(url)
+    let data = await res.json()
+    
+    window.ll = L.labeler(data, {
+        pointToLayer: (gj, ll) => L.circleMarker(ll, {
+            radius: gj.properties.population ? Math.pow(gj.properties[order], .2) - 1 : 1
+        }),
+        labelProp: 'NAME',
+        labelFunc: l => (`${l.feature.properties[field]} (${formatNumber(l.feature.properties[order])})`),
+        labelPos: 'cc',
+        labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
+        style: (f, l) => {
+            return {
+                color: "#000",
+                weight: 2,
+                fillColor: "#fff"
+            }
+
+        },
+        priorityProp: order,
+        // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
+    }).addTo(map).bindPopup(l => {
+
+        return generateCountryCard(l.feature.properties)
+    });
+    // let layer = L.polylabel(geojson, {
+    //     ratio: 1.5, // default, set to 1 for default poal of inacesability without stre4atch
+    //    
+    //    
+    // })
+    //
+    
+}
+
+labelGeoJson("https://ne.freemap.online/110m/physical/ne_110m_lakes.json")
+```
+     
 ## polylabel [![Build Status](https://travis-ci.org/mapbox/polylabel.svg?branch=master)](https://travis-ci.org/mapbox/polylabel)
 
 A fast algorithm for finding polygon _pole of inaccessibility_,
