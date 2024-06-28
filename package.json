@@ -1,8 +1,8 @@
 {
-  "name": "@syonfox/polylabel",
-  "version": "2.0.0",
+  "name": "leaflet-polylabel",
+  "version": "2.0.1",
   "description": "A JS library for finding optimal label position inside a polygon",
-  "main": "polylabel.js",
+  "main": "dist/L.polylabel.js",
   "scripts": {
     "build": "bash concat.sh ./src/polylabel.js src/leaflet-labeler.js dist/L.polylabel.js"
   },
@@ -10,7 +10,10 @@
   "author": "Vladimir Agafonkin, updated by davis tec and then syonfox.",
   "license": "ISC",
   "files": [
-    "polylabel.js"
+    "dist/L.polylabel.js",
+    "src/polylabel.js",
+    "src/leaflet-labeler.css",
+    "src/leaflet-labeler.js"
   ],
   "devDependencies": {
   },

@@ -23,7 +23,40 @@
     </style>
 </head>
 <body>
-<input id="ratio" type="range" min=0.0001 max=10 step=0.01 value=0.2 width="100%">
+<!--<input id="ratio" type="range" min=0.0001 max=10 step=0.01 value=0.2 width="100%">-->
+
+<h2>Global Economic Power and Population Density Map</h2>
+<details>
+    <summary>
+        This interactive map provides a comprehensive visualization of the world's countries based on several key economic and demographic indicators.
+    </summary>
+    <p>
+        The map represents countries with a blend of colors and borders that signify different aspects of their economic power and population density:
+    </p>
+    <ul>
+        <li>
+            <strong>Red Component:</strong> The red shade of each country correlates with its population density. Higher population densities are indicated by a more intense red color. Population density is calculated as the number of people per square kilometer. To handle extreme values, densities above 800 people per km² are logarithmically scaled.
+        </li>
+        <li>
+            <strong>Blue Component:</strong> The blue shade reflects the Economic Power Index (EPI) of each country. The EPI is a composite metric that takes into account GDP, population, and land area, weighted to emphasize GDP per capita, GDP per unit area, and total population. The weights used in the formula are 0.4 for GDP per capita, 0.2 for GDP per unit area, and 0.4 for population. A logarithmic scale is applied to the population density for visual normalization.
+        </li>
+        <li>
+            <strong>Country Borders:</strong> The borders of each country are colored based on the GDP per capita, giving a clear outline of economic wealth per individual.
+        </li>
+    </ul>
+    <p>
+        The map is fully interactive, allowing users to click on any country to see a popup with detailed information about its demographic and economic statistics. The label format used for each country is as follows:
+        <strong>Name (people/km²) ($/person) (EPI)</strong>.
+        Please note that clicking on the label will not trigger the popup; only clicking directly on the country will do so.
+    </p>
+    <p>
+        <strong>Scientific Overview:</strong> This dataset provides a valuable overview of global economic and demographic patterns. By visualizing data such as GDP, population, and land area, this map offers insights into how wealth and population are distributed around the world. The inclusion of the Economic Power Index helps to highlight countries that might have significant economic influence despite smaller populations or land areas.
+    </p>
+    <p>
+        <strong>Dataset:</strong> The data used in this map comes from Natural Earth Data, which is a reliable source but may be 5-10 years out of date. This information has been processed to calculate additional metrics such as GDP per capita, population density, and the Economic Power Index, providing a richer context for analysis.
+    </p>
+</details>
+
 <div id="map"></div>
 <script crossorigin="anonymous"
         src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
@@ -35,13 +68,13 @@
 <script>
 
 
-    var ratioRange = document.getElementById("ratio")
-    var ratio = parseFloat(ratioRange.value);
-
-    ratioRange.oninput = () => {
-        ratio = parseFloat(ratioRange.value);
-        // updateLabels(geojson)
-    }
+    // var ratioRange = document.getElementById("ratio")
+    // var ratio = parseFloat(ratioRange.value);
+    //
+    // ratioRange.oninput = () => {
+    //     ratio = parseFloat(ratioRange.value);
+    //     // updateLabels(geojson)
+    // }
 
     // Initialize the map
     var map = L.map('map').setView([20, 0], 2);
