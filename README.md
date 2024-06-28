@@ -99,6 +99,7 @@ This plugin enhances Leaflet's labeling capabilities by leveraging the Polylabel
 ## Other work 
 https://plnkr.co/edit/grF2TZdRS6P9YqW9?preview
 https://observablehq.com/@kotelnikov/labeling-with-stretched-polylabel-updated
+https://ica-adv.copernicus.org/articles/4/8/2023/ica-adv-4-8-2023.pdf
 
 ## polylabel [![Build Status](https://travis-ci.org/mapbox/polylabel.svg?branch=master)](https://travis-ci.org/mapbox/polylabel)
 
