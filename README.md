@@ -101,6 +101,210 @@ L.polylabel(data, {
 ```
 
 This plugin enhances Leaflet's labeling capabilities by leveraging the Polylabel algorithm to ensure optimal label placement within complex polygons. The added `stretchRatio` option allows for better control over label stretching to fit within larger polygons.
+
+
+# Guide
+
+### **Options**
+
+Here’s a detailed breakdown of the available options in `L.Labeler`:
+
+1. **`pointToLayer`** *(Function)*  
+   Converts a GeoJSON point feature into a Leaflet layer. This is useful for customizing how each point is rendered on the map.
+    - **Example**:
+      ```js
+      pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, { radius: 8, color: 'red' });
+      }
+      ```
+
+2. **`labelProp`** *(String)*  
+   The property name in the GeoJSON feature to use as the label text. By default, this is the `name` property, but you can specify another property.
+    - **Example**:
+      ```js
+      labelProp: 'title'  // Use the 'title' property for labels.
+      ```
+
+3. **`labelFunc`** *(Function)*  
+   A custom function to format the label text. This function receives the feature as an argument and returns a string that will be used as the label.
+    - **Example**:
+      ```js
+      labelFunc: function(feature) {
+          return `${feature.properties.name} (${feature.properties.population})`;
+      }
+      ```
+
+4. **`labelPos`** *(String)*  
+   The position of the label relative to the point. Default is `'cc'` (center-center). Other options include `'t'` (top), `'b'` (bottom), `'l'` (left), `'r'` (right).
+    - **Example**:
+      ```js
+      labelPos: 't'  // Position the label above the point.
+      ```
+
+5. **`labelStyle`** *(Object|Function)*  
+   Defines the CSS style for the label text. This can either be a static object or a function that returns a style object based on the feature properties.
+    - **Example 1 (Static Object)**:
+      ```js
+      labelStyle: {
+          textTransform: 'uppercase',
+          fontWeight: 'bold',
+          color: 'red',
+          backgroundColor: 'white',
+          padding: '2px',
+          borderRadius: '3px',
+      }
+      ```
+    - **Example 2 (Dynamic Style Function)**:
+      ```js
+      labelStyle: function(feature) {
+          return {
+              textTransform: 'uppercase',
+              fontWeight: 'bold',
+              color: feature.properties.population_density > 100 ? 'red' : 'green',
+              backgroundColor: 'white',
+              padding: '2px',
+              borderRadius: '3px',
+          };
+      }
+      ```
+
+6. **`style`** *(Function)*  
+   A function that returns the style object for the feature layers. It receives the feature as an argument and can be used to customize the layer's appearance (e.g., color, opacity).
+    - **Example**:
+      ```js
+      style: function(feature) {
+          return {
+              color: feature.properties.population_density > 100 ? 'red' : 'green',
+              weight: 2,
+              opacity: 0.5
+          };
+      }
+      ```
+
+7. **`priorityProp`** *(String)*  
+   The property name in the feature used to determine the priority of labels. Features with a higher value in this property will be rendered first. This can be used to control label overlaps.
+    - **Example**:
+      ```js
+      priorityProp: 'importance'  // Labels with higher 'importance' values are rendered first.
+      ```
+
+8. **`stretchRatio`** *(Number)*  
+   A ratio to stretch the label for better fitting. This is useful when labels have varying lengths, and you want them to fit neatly without clipping. The default value is `1.5`.
+    - **Example**:
+      ```js
+      stretchRatio: 2  // Stretch the label by a factor of 2 to fit.
+      ```
+
+---
+
+### **Styling Labels Guide**
+
+You can style labels dynamically and consistently by leveraging the `labelStyle` option. Below are some guidelines and examples to help you style labels effectively.
+
+#### **Static Styles**
+To apply the same style to all labels, use a static object. This object follows standard CSS properties that are applied directly to the label's `<span>` element.
+
+- **Example**:
+  ```js
+  labelStyle: {
+      textTransform: 'uppercase',
+      fontWeight: 'bold',
+      color: 'black',
+      backgroundColor: 'yellow',
+      padding: '3px',
+      borderRadius: '5px',
+  }
+  ```
+
+- **Resulting HTML**:
+  ```html
+  <span class="leaflet-labeler-label" style="text-transform: uppercase; font-weight: bold; color: black; background-color: yellow; padding: 3px; border-radius: 5px;">
+      Central African Rep. (9p/km²) (570$/p) (165875)
+  </span>
+  ```
+
+#### **Dynamic Styles with Functions**
+For dynamic styling based on feature properties, use a function that returns a style object. This allows you to create custom styles based on any aspect of the feature (e.g., population density, region, etc.).
+
+- **Example**:
+  ```js
+  labelStyle: function(feature) {
+      return {
+          textTransform: 'uppercase',
+          fontWeight: 'bold',
+          color: feature.properties.population_density > 100 ? 'red' : 'green',
+          backgroundColor: 'white',
+          padding: '2px',
+          borderRadius: '3px',
+      };
+  }
+  ```
+
+- **Resulting HTML (example for high population density)**:
+  ```html
+  <span class="leaflet-labeler-label" style="text-transform: uppercase; font-weight: bold; color: red; background-color: white; padding: 2px; border-radius: 3px;">
+      Central African Rep. (9p/km²) (570$/p) (165875)
+  </span>
+  ```
+
+#### **Using `labelPos` for Placement**
+You can control the label's position relative to its feature using the `labelPos` option. Use values like `'cc'`, `'t'`, `'b'`, `'l'`, `'r'` to position the label at the center, top, bottom, left, or right of the feature.
+
+- **Example**:
+  ```js
+  labelPos: 't'  // Position the label above the point.
+  ```
+
+#### **Stretching Labels**
+If your labels are of varying lengths, use the `stretchRatio` option to make them fit better within a defined area. The default value is `1.5`, but you can adjust it to suit your needs.
+
+- **Example**:
+  ```js
+  stretchRatio: 2  // Stretch the label to fit better.
+  ```
+
+#### **Complete Example**
+Here’s a full example that combines all of the options to style a label dynamically:
+
+```js
+L.labeler({
+    pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, { radius: 8, color: 'red' });
+    },
+    labelProp: 'name',
+    labelFunc: function(feature) {
+        return `${feature.properties.name} (${feature.properties.population_density}p/km²)`;
+    },
+    labelPos: 'cc',
+    labelStyle: function(feature) {
+        return {
+            textTransform: 'uppercase',
+            fontWeight: 'bold',
+            color: feature.properties.population_density > 100 ? 'red' : 'green',
+            backgroundColor: 'white',
+            padding: '5px',
+            borderRadius: '3px',
+        };
+    },
+    style: function(feature) {
+        return {
+            color: feature.properties.population_density > 100 ? 'red' : 'green',
+            weight: 2,
+            opacity: 0.7,
+        };
+    },
+    priorityProp: 'importance',
+    stretchRatio: 1.5,
+});
+```
+
+In this setup, labels will be:
+- Styled dynamically based on population density.
+- Positioned at the center of each feature.
+- Styled with a bold, uppercase, and color-coded scheme.
+- Labels will be stretched with a `stretchRatio` of `1.5` to fit better.
+
+
 ## Other work 
 https://plnkr.co/edit/grF2TZdRS6P9YqW9?preview
 https://observablehq.com/@kotelnikov/labeling-with-stretched-polylabel-updated

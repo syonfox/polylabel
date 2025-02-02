@@ -28,32 +28,49 @@
 <h2>Global Economic Power and Population Density Map</h2>
 <details>
     <summary>
-        This interactive map provides a comprehensive visualization of the world's countries based on several key economic and demographic indicators.
+        This interactive map provides a comprehensive visualization of the world's countries based on several key
+        economic and demographic indicators.
     </summary>
     <p>
-        The map represents countries with a blend of colors and borders that signify different aspects of their economic power and population density:
+        The map represents countries with a blend of colors and borders that signify different aspects of their economic
+        power and population density:
     </p>
     <ul>
         <li>
-            <strong>Red Component:</strong> The red shade of each country correlates with its population density. Higher population densities are indicated by a more intense red color. Population density is calculated as the number of people per square kilometer. To handle extreme values, densities above 800 people per km² are logarithmically scaled.
+            <strong>Red Component:</strong> The red shade of each country correlates with its population density. Higher
+            population densities are indicated by a more intense red color. Population density is calculated as the
+            number of people per square kilometer. To handle extreme values, densities above 800 people per km² are
+            logarithmically scaled.
         </li>
         <li>
-            <strong>Blue Component:</strong> The blue shade reflects the Economic Power Index (EPI) of each country. The EPI is a composite metric that takes into account GDP, population, and land area, weighted to emphasize GDP per capita, GDP per unit area, and total population. The weights used in the formula are 0.4 for GDP per capita, 0.2 for GDP per unit area, and 0.4 for population. A logarithmic scale is applied to the population density for visual normalization.
+            <strong>Blue Component:</strong> The blue shade reflects the Economic Power Index (EPI) of each country. The
+            EPI is a composite metric that takes into account GDP, population, and land area, weighted to emphasize GDP
+            per capita, GDP per unit area, and total population. The weights used in the formula are 0.4 for GDP per
+            capita, 0.2 for GDP per unit area, and 0.4 for population. A logarithmic scale is applied to the population
+            density for visual normalization.
         </li>
         <li>
-            <strong>Country Borders:</strong> The borders of each country are colored based on the GDP per capita, giving a clear outline of economic wealth per individual.
+            <strong>Country Borders:</strong> The borders of each country are colored based on the GDP per capita,
+            giving a clear outline of economic wealth per individual.
         </li>
     </ul>
     <p>
-        The map is fully interactive, allowing users to click on any country to see a popup with detailed information about its demographic and economic statistics. The label format used for each country is as follows:
+        The map is fully interactive, allowing users to click on any country to see a popup with detailed information
+        about its demographic and economic statistics. The label format used for each country is as follows:
         <strong>Name (people/km²) ($/person) (EPI)</strong>.
-        Please note that clicking on the label will not trigger the popup; only clicking directly on the country will do so.
+        Please note that clicking on the label will not trigger the popup; only clicking directly on the country will do
+        so.
     </p>
     <p>
-        <strong>Scientific Overview:</strong> This dataset provides a valuable overview of global economic and demographic patterns. By visualizing data such as GDP, population, and land area, this map offers insights into how wealth and population are distributed around the world. The inclusion of the Economic Power Index helps to highlight countries that might have significant economic influence despite smaller populations or land areas.
+        <strong>Scientific Overview:</strong> This dataset provides a valuable overview of global economic and
+        demographic patterns. By visualizing data such as GDP, population, and land area, this map offers insights into
+        how wealth and population are distributed around the world. The inclusion of the Economic Power Index helps to
+        highlight countries that might have significant economic influence despite smaller populations or land areas.
     </p>
     <p>
-        <strong>Dataset:</strong> The data used in this map comes from Natural Earth Data, which is a reliable source but may be 5-10 years out of date. This information has been processed to calculate additional metrics such as GDP per capita, population density, and the Economic Power Index, providing a richer context for analysis.
+        <strong>Dataset:</strong> The data used in this map comes from Natural Earth Data, which is a reliable source
+        but may be 5-10 years out of date. This information has been processed to calculate additional metrics such as
+        GDP per capita, population density, and the Economic Power Index, providing a richer context for analysis.
     </p>
 </details>
 
@@ -64,6 +81,8 @@
 <script src="../src/leaflet-labeler.js"></script>
 <!--for area calculation just use turf ;) -->
 <script src="https://unpkg.com/@turf/turf@6.3.0/turf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+
 
 <script>
 
@@ -133,44 +152,64 @@
         return Math.pow(gdpPerCapita, alpha) * Math.pow(gdpPerUnitArea, beta) * Math.pow(population, gamma);
     }
 
-    // Add GeoJSON data
-    fetch('https://ne.freemap.online/50m/cultural/ne_50m_admin_0_countries.json')
-        .then(response => response.json())
-        .then(data => {
-            let t1 = Date.now();
-            data.features = data.features.map(f => {
-
-                let gdp = f.properties.GDP_MD_EST * 1000000
-                let pop = f.properties.POP_EST;
-                let area = turf.area(f); //m
-                f.properties.GDP_PER_CAP = (gdp / Math.max(1, pop))
-
-                f.properties.AREA_KM2 = (area / 1e6)
-                // f.properties.MY_AREA_KM2 = geomArea(f);
+    let dataProm = [
+        fetch('./data/ne_50m_admin_0_countries.json')
+            .then(response => response.json()),
+        fetch('./data/mnt300_simple_05d.geo.json')
+            .then(response => response.json()),
+        fetch('./data/open_peaks.geo.json')
+            .then(response => response.json())
+    ]
 
 
-                f.properties.EPI = calculateEconomicPowerIndex(gdp, pop, f.properties.AREA_KM2)
-
-                f.properties.POP_PER_KM2 = (pop / f.properties.AREA_KM2)
-                if (f.properties.POP_PER_KM2 > 800) {
-                    f.properties.POP_PER_KM2_CLAMP = Math.log(800)
-                    console.warn("contry to dense", f);
-                }  if (f.properties.POP_PER_KM2 <2 ) {
-                     f.properties.POP_PER_KM2_CLAMP = 0
-                } else {
-                    f.properties.POP_PER_KM2_CLAMP = Math.log(f.properties.POP_PER_KM2)
-                } // so that scale of red is kind of normall
+    Promise.all(dataProm).then(datas => {
 
 
-                return f;
-            })
+        let adminJson = datas[0];
+        let mntJson = datas[1];
+        let peakJson = datas[2];
 
-            console.log("Added (gdp per capita and area / pop per km2 in : ", Date.now() - t1, "ms");
-
-            labelJson(data, 'NAME', "AREA_KM2");
+        // in theory the order matters the firt layer to be added will be at the back???
 
 
-        });
+        let t1 = Date.now();
+        adminJson.features = adminJson.features.map(f => {
+
+            let gdp = f.properties.GDP_MD_EST * 1000000
+            let pop = f.properties.POP_EST;
+            let area = turf.area(f); //m
+            f.properties.GDP_PER_CAP = (gdp / Math.max(1, pop))
+
+            f.properties.AREA_KM2 = (area / 1e6)
+            // f.properties.MY_AREA_KM2 = geomArea(f);
+
+
+            f.properties.EPI = calculateEconomicPowerIndex(gdp, pop, f.properties.AREA_KM2)
+
+            f.properties.POP_PER_KM2 = (pop / f.properties.AREA_KM2)
+            if (f.properties.POP_PER_KM2 > 800) {
+                f.properties.POP_PER_KM2_CLAMP = Math.log(800)
+                console.warn("contry to dense", f);
+            }
+            if (f.properties.POP_PER_KM2 < 2) {
+                f.properties.POP_PER_KM2_CLAMP = 0
+            } else {
+                f.properties.POP_PER_KM2_CLAMP = Math.log(f.properties.POP_PER_KM2)
+            } // so that scale of red is kind of normall
+
+
+            return f;
+        })
+
+        console.log("Added (gdp per capita and area / pop per km2 in : ", Date.now() - t1, "ms");
+
+        labelJson(adminJson, 'NAME', "AREA_KM2");
+        labelJsonMnt(mntJson, 'MapName', "Elev_High");
+        //labelJsonPeak(peakJson, 'name', "meters");
+
+        // labelJson(admi/nJson, 'MapName', "Elev_High");
+
+    })
 
 
     function getColorFromCountryData(country, redField, greenField, blueField, maxValues) {
@@ -322,6 +361,98 @@
             return generateCountryCard(l.feature.properties)
         });
 
+
+    }
+
+    function labelJsonMnt(data, field, order) {
+
+
+        const properties = ["Elev_High", "Area"];
+
+        const result = findMinMaxValues(data, properties);
+        // fetch geojson data and create a layer with labels
+        console.log(result)
+
+
+        var colorScale = chroma.scale('viridis').domain([0, 9000]);
+        // Style function
+        function style(feature) {
+            return {
+                fillColor: colorScale(feature.properties.Elev_High).hex(),
+                weight: 1,
+                opacity: 1,
+                color: 'black',
+                fillOpacity: 0.8
+            };
+        }
+
+        // new layer stored in global variable to make debugging easier
+        window.ll_mnt = L.polylabel(data, {
+            style: style,
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, style(feature));
+            },
+            labelProp: field,
+            // labelFunc: l => (`${l.feature.properties[field]})`),
+            labelPos: 'cc',
+            labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
+            stretchRatio: 1.5,
+            priorityProp: order,
+            // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
+        }).addTo(map).bindPopup(l => {
+
+            return generateCountryCard(l.feature.properties)
+        });
+
+
+    }
+
+    function labelJsonPeak(data, field, order) {
+
+        const result = findMinMaxValues(data, [order]);
+        console.log(result);
+
+        // Color scale based on elevation (meters)
+        var colorScale = chroma.scale(['#4575b4', '#fee090', '#a50026']).domain([0, 9000]);
+
+        // Style function for polygons
+        function style(feature) {
+            return {
+                fillColor: colorScale(feature.properties.meters).hex(),
+                weight: 1.5,
+                radius: 5,
+                opacity: 1,
+                color: '#333',
+                fillOpacity: 0.6
+            };
+        }
+
+
+        // new layer stored in global variable to make debugging easier
+        window.ll_peak = L.polylabel(data, {
+            style: style,
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, style(feature));
+            },
+            labelProp: field,
+            // labelFunc: l => (`${l.feature.properties[field]})`),
+            labelPos: 'cc',
+            labelStyle: {textTransform: 'uppercase', fontWeight: 'bold'},
+            stretchRatio: 1.5,
+            priorityProp: order,
+            // viewFilter: f=>(f.properties.population-0<=maxPop&&f.properties.population-0>=minPop),
+        })
+
+
+
+        map.on('zoomend', function() {
+            var zoomLevel = map.getZoom();
+            if (zoomLevel < 5) {
+                map.removeLayer(window.ll_peak); // Hide layer at low zoom levels
+            } else {
+                map.addLayer(window.ll_peak); // Show layer when zooming in
+            }
+        });
 
     }
 
